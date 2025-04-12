@@ -9,6 +9,3 @@ def print_file_structure(directory, indent=0):
 
 #Eyecandies Dataset structure
 print_file_structure('./eyecandies/docs/assets')
-
-#MAD(Multi-pose Anomaly Detection) Dataset structure
-#print_file_structure('./PAD/assets')
