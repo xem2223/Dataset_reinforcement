@@ -8,34 +8,37 @@ from diffusers import (
     ControlNetModel, StableDiffusionControlNetPipeline,
     DDPMScheduler, AutoencoderKL,
 )
-from Dataset import DefectSynthesisDataset
+from Dataset2 import DefectSynthesisDataset
 from tqdm import tqdm
 
 # ───────────── CONFIG ─────────────
 DATA_ROOT    = "/opt/dlami/nvme"
 BATCH_SIZE   = 2
-EPOCHS       = 1
+EPOCHS       = 2
 LR           = 1e-4
 VAE_ID       = "runwayml/stable-diffusion-v1-5"
 SD_ID        = "runwayml/stable-diffusion-v1-5"
 CONTROLNET_ID= "lllyasviel/sd-controlnet-scribble"
 OUTPUT_DIR   = "./checkpoints"
-SAVE_STEPS   = 500
+SAVE_STEPS   = 2000
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ───────────── DATASET ─────────────
 dataset = DefectSynthesisDataset(
-    DATA_ROOT, cache_in_ram=False, max_samples=None,
-    use_latent=True, use_precond=True
+    DATA_ROOT, cache_in_ram=False,
 )
 idx2class  = {v: k for k, v in dataset.class2idx.items()}
 idx2defect = {v: k for k, v in dataset.defect2idx.items()}
 
 loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True,
-                    num_workers=2, pin_memory=False, prefetch_factor=2,
+                    num_workers=4, pin_memory=False, prefetch_factor=2,
                     persistent_workers=True, timeout=120)
+
+batch = next(iter(loader))
+print(batch.keys())
+
 # ───────────── CUDA 튜닝 ─────────────
 torch.backends.cudnn.benchmark = True
 if hasattr(torch, "set_float32_matmul_precision"):
@@ -196,6 +199,10 @@ for epoch in range(1, EPOCHS + 1):
     avg = total_loss / len(loader)
     print(f"Epoch {epoch} finished | avg loss: {avg:.4f}")
     controlnet.save_pretrained(f"{OUTPUT_DIR}/lora_epoch{epoch}")
+
+   
+ 
+
 
    
  
