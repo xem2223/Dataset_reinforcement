@@ -12,6 +12,6 @@ SDv1.5 + ControlNet 기반 i2i pipeline
 
     사전계산 사용 시(옵션)
       root_dir/
-        ├─ <class>/OK_lat/*.pt         # list[Tensor: (4, 64, 64)]  fp16
-        ├─ <class>/Full_NG_lat/*.pt    # list[Tensor: (4, 64, 64)]  fp16
-        └─ <class>/NG_cond/*.pt        # list[Tensor: (3, 512, 512)] in [-1, 1], fp16
+        ├─ <class>/OK_lat/*.pt         
+        ├─ <class>/Full_NG_lat/*.pt   
+        └─ <class>/NG_cond/*.pt       
