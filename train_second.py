@@ -14,7 +14,7 @@ from Dataset import DefectSynthesisDataset  # latent/cond 전용 Dataset 사용
 from utils import (
     set_seed, build_prompt_cache, get_text_embeds,
     parse_classes_arg, make_replay_dataset,
-    steps_per_epoch, make_dataloader
+    steps_per_epoch, make_dataloader, try_load_old_classes_from_ckpt
 )
 
 def main():
@@ -22,8 +22,8 @@ def main():
     parser.add_argument("--root", type=str, required=True)
     parser.add_argument("--resume_lora", type=str, required=True, help="기존 LoRA 체크포인트 디렉토리")
     parser.add_argument("--output_dir", type=str, default="./checkpoints_second")
-    parser.add_argument("--new_classes", type=str, required=True, help="쉼표로 구분된 새 클래스 6개")
-    parser.add_argument("--old_classes", type=str, required=True, help="쉼표로 구분된 기존 클래스 6개")
+    parser.add_argument("--new_classes", type=str, default=None,help="쉼표구분 새 클래스(미지정 시 자동)")
+    parser.add_argument("--old_classes", type=str, default=None,help="쉼표구분 기존 클래스(미지정 시 체크포인트/classes.txt에서 자동)")
     parser.add_argument("--replay_ratio", type=float, default=0.25)
 
     parser.add_argument("--vae_id", type=str, default="runwayml/stable-diffusion-v1-5")
@@ -50,16 +50,43 @@ def main():
     # -------- Dataset (latent/cond 전용) --------
     # DefectSynthesisDataset(args.root) 로 latent/cond 전용 데이터셋 전체를 로드
     ds_all = DefectSynthesisDataset(args.root, cache_in_ram=False)
+    all_names = sorted(ds_all.class2idx.keys())
     idx2class = {v:k for k,v in ds_all.class2idx.items()}
     idx2defect = {v:k for k,v in ds_all.defect2idx.items()}
      
     # 새/옛 클래스명 리스트를 파싱
-    new_names = parse_classes_arg(args.new_classes)
-    old_names = parse_classes_arg(args.old_classes)
+    new_names = parse_classes_arg(args.new_classes) if args.new_classes else None
+    old_names = parse_classes_arg(args.old_classes) if args.old_classes else None
     
+    if old_names is None:
+        old_names = try_load_old_classes_from_ckpt(args.resume_lora)
+
+    if new_names is None:
+        # 새 클래스 = 전체 − (알고 있는 OLD)
+        if old_names:
+            new_names = [n for n in all_names if n not in set(old_names)]
+        else:
+            # OLD 정보를 못 찾으면 전체를 새로 본다(리플레이는 자연히 꺼짐)
+            print("[WARN] old_classes를 찾지 못했습니다(체크포인트에 classes.txt 없음)")
+            new_names = all_names
+    
+    # 유효성 체크
+    if not new_names:
+        raise ValueError("new_classes가 비었습니다. 경로/폴더명을 확인하세요.")
+    print(f"[AUTO] new_classes: {new_names}")
+    print(f"[AUTO] old_classes: {old_names or []}")
+    
+    try:
+        os.makedirs(args.output_dir, exist_ok=True)
+        with open(os.path.join(args.output_dir, "classes.txt"), "w", encoding="utf-8") as f:
+            for n in sorted(set(new_names + (old_names or []))):
+                f.write(n + "\n")
+    except Exception as e:
+        print(f"[WARN] classes.txt 저장 실패: {e}")
+        
     # make_replay_dataset(...) : 새 클래스 샘플 전체 + 옛 클래스 일부(새 개수 × replay_ratio)를 랜덤 선택해 ConcatDataset으로 결합
-    train_set = make_replay_dataset(ds_all, old_names, new_names, args.replay_ratio, args.seed)
-    
+    train_set = make_replay_dataset(ds_all, old_names or [], new_names, args.replay_ratio, args.seed)
+   
     loader = make_dataloader(
         train_set,
         batch_size=args.batch_size,
