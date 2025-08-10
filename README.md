@@ -3,7 +3,7 @@
 
 SDv1.5 + ControlNet 기반 i2i pipeline
 
-디렉토리 구조(원본)
+     
       root_dir/
         ├─ <class>/OK/*.pt
         ├─ <class>/NG/*.pt
