@@ -3,6 +3,7 @@ import os, math, random
 from typing import Dict, Tuple, List
 import torch
 from torch.utils.data import Subset, ConcatDataset
+import json 
 
 # --------------------------- seeds ---------------------------
 def set_seed(seed: int):
@@ -111,3 +112,22 @@ def make_dataloader(dataset_or_concat, batch_size: int, num_workers: int, prefet
     else:
         dl_kwargs.update(dict(persistent_workers=False))  # 안전
     return DataLoader(dataset_or_concat, **dl_kwargs)
+    
+ # ----------------------- 체크포인트에서 old 클래스 읽기 
+def try_load_old_classes_from_ckpt(ckpt_dir: str):
+    """체크포인트 디렉토리에서 old 클래스 목록을 읽어온다."""
+    txt = os.path.join(ckpt_dir, "classes.txt")
+    jsn = os.path.join(ckpt_dir, "classes.json")
+    if os.path.isfile(txt):
+        with open(txt, "r", encoding="utf-8") as f:
+            return [ln.strip() for ln in f if ln.strip()]
+    if os.path.isfile(jsn):
+        with open(jsn, "r", encoding="utf-8") as f:
+            obj = json.load(f)
+            if isinstance(obj, dict):
+                if "classes" in obj and isinstance(obj["classes"], list):
+                    return [str(x) for x in obj["classes"]]
+                if "old_classes" in obj and isinstance(obj["old_classes"], list):
+                    return [str(x) for x in obj["old_classes"]]
+    return None
+
