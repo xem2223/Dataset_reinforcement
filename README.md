@@ -15,3 +15,11 @@ SDv1.5 + ControlNet 기반 i2i pipeline
         ├─ <class>/OK_lat/*.pt         
         ├─ <class>/Full_NG_lat/*.pt   
         └─ <class>/NG_cond/*.pt       
+
+* infer_lora.py 사용방법
+  python infer_lora.py \
+  --resume_lora /home/ubuntu/i2i/checkpoints_second/lora_step8000 \
+  --classes 'audiojack,bottle_cap' \
+  --mode img2img --strength 0.5 \
+  --n 10 --steps 40 --scale 6.8 --cond_scale 1.6 --seed 123 \
+  --out ./samples_img2img
