@@ -17,6 +17,7 @@ SDv1.5 + ControlNet 기반 i2i pipeline
         └─ <class>/NG_cond/*.pt       
 
 * infer_lora.py 사용방법
+
   python infer_lora.py \
   --resume_lora /home/ubuntu/i2i/checkpoints_second/lora_step8000 \
   --classes 'audiojack,bottle_cap' \
