@@ -1,0 +1,12 @@
+audiojack
+bottle_cap
+button_battery
+end_cap
+eraser
+mint
+mounts
+pcb
+phone_battery
+plastic_nut
+plastic_plug
+porcelain_doll
